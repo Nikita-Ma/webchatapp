@@ -9,7 +9,7 @@ import {
     Message,
     Icon
 } from "semantic-ui-react";
-import { Link } from "react-router-dom";
+import {Link} from "react-router-dom";
 
 class Register extends React.Component {
     state = {
@@ -17,7 +17,8 @@ class Register extends React.Component {
         email: "",
         password: "",
         passwordConfirmation: "",
-        errors: []
+        errors: [],
+        loading: false
     };
 
     isFormValid = () => {
@@ -25,19 +26,19 @@ class Register extends React.Component {
         let error;
 
         if (this.isFormEmpty(this.state)) {
-            error = { message: "Fill in all fields" };
-            this.setState({ errors: errors.concat(error) });
+            error = {message: "Fill in all fields"};
+            this.setState({errors: errors.concat(error)});
             return false;
         } else if (!this.isPasswordValid(this.state)) {
-            error = { message: "Password is invalid" };
-            this.setState({ errors: errors.concat(error) });
+            error = {message: "Password is invalid"};
+            this.setState({errors: errors.concat(error)});
             return false;
         } else {
             return true;
         }
     };
 
-    isFormEmpty = ({ username, email, password, passwordConfirmation }) => {
+    isFormEmpty = ({username, email, password, passwordConfirmation}) => {
         return (
             !username.length ||
             !email.length ||
@@ -46,7 +47,7 @@ class Register extends React.Component {
         );
     };
 
-    isPasswordValid = ({ password, passwordConfirmation }) => {
+    isPasswordValid = ({password, passwordConfirmation}) => {
         if (password.length < 6 || passwordConfirmation.length < 6) {
             return false;
         } else if (password !== passwordConfirmation) {
@@ -60,23 +61,29 @@ class Register extends React.Component {
         errors.map((error, i) => <p key={i}>{error.message}</p>);
 
     handleChange = event => {
-        this.setState({ [event.target.name]: event.target.value });
+        this.setState({[event.target.name]: event.target.value});
     };
 
     handleSubmit = event => {
+        event.preventDefault();
         if (this.isFormValid()) {
-            event.preventDefault();
+            this.setState({errors: [], loading: true})
             firebase
                 .auth()
                 .createUserWithEmailAndPassword(this.state.email, this.state.password)
                 .then(createdUser => {
                     console.log(createdUser);
+                    this.setState({loading: false})
                 })
                 .catch(err => {
+                    this.setState({errors: this.state.errors.concat(err), loading: false})
                     console.error(err);
                 });
         }
     };
+    handlerInputError = (errors, inputName) => {
+        return (errors.some(error => error.message.toLowerCase().includes(inputName)) ? 'error' : '')
+    }
 
     render() {
         const {
@@ -84,14 +91,15 @@ class Register extends React.Component {
             email,
             password,
             passwordConfirmation,
-            errors
+            errors,
+            loading
         } = this.state;
 
         return (
             <Grid textAlign="center" verticalAlign="middle" className="app">
-                <Grid.Column style={{ maxWidth: 450 }}>
+                <Grid.Column style={{maxWidth: 450}}>
                     <Header as="h2" icon color="orange" textAlign="center">
-                        <Icon name="puzzle piece" color="orange" />
+                        <Icon name="puzzle piece" color="orange"/>
                         Register for DevChat
                     </Header>
                     <Form onSubmit={this.handleSubmit} size="large">
@@ -115,6 +123,7 @@ class Register extends React.Component {
                                 placeholder="Email Address"
                                 onChange={this.handleChange}
                                 value={email}
+                                className={this.handlerInputError(errors, 'email')}
                                 type="email"
                             />
 
@@ -126,6 +135,7 @@ class Register extends React.Component {
                                 placeholder="Password"
                                 onChange={this.handleChange}
                                 value={password}
+                                className={this.handlerInputError(errors, 'password')}
                                 type="password"
                             />
 
@@ -137,10 +147,12 @@ class Register extends React.Component {
                                 placeholder="Password Confirmation"
                                 onChange={this.handleChange}
                                 value={passwordConfirmation}
+                                className={this.handlerInputError(errors, 'password')}
                                 type="password"
                             />
 
-                            <Button color="orange" fluid size="large">
+                            <Button disabled={loading} className={loading ? 'loading' : ''} color="orange" fluid
+                                    size="large">
                                 Submit
                             </Button>
                         </Segment>
